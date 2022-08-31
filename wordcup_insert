@@ -1,0 +1,48 @@
+#!/bin/bash
+
+if [[ $1 == "test" ]]
+then
+  PSQL="psql --username=postgres --dbname=worldcuptest -t --no-align -c"
+else
+  PSQL="psql --username=freecodecamp --dbname=worldcup -t --no-align -c"
+fi
+
+echo $($PSQL "TRUNCATE games,teams")
+# Do not change code above this line. Use the PSQL variable above to query your database.
+cat games.csv | while IFS="," read year round winner opponent winner_goals opponent_goals
+do
+  if [[ $winner != 'winner' ]]
+  then 
+      TEAM_ID=$($PSQL "select team_id from teams where name='$winner'")
+      if [[ -z $TEAM_ID ]] 
+      then
+        INSERT_TEAM_RESULT=$($PSQL "insert into teams(name)values('$winner')")
+        if [[ $INSERT_TEAM_RESULT == 'INSERT 0 1' ]]
+        then
+          echo "Inserted into teams, $winner"
+        fi
+        TEAM_ID=$($PSQL "select team_id from teams where name='$winner'")
+      fi
+  fi
+  if [[ $opponent != 'opponent' ]]
+  then 
+      TEAM_ID_2=$($PSQL "select team_id from teams where name='$opponent'")
+      if [[ -z $TEAM_ID_2 ]] 
+      then
+        INSERT_TEAM_RESULT=$($PSQL "insert into teams(name)values('$opponent')")
+        if [[ $INSERT_TEAM_RESULT == 'INSERT 0 1' ]]
+        then
+          echo "Inserted into teams, $opponent"
+        fi
+        TEAM_ID_2=$($PSQL "select team_id from teams where name='$opponent'")
+      fi
+  fi
+  if [[ $round != 'round' ]]
+  then
+    INSERT_GAMES_RESULT=$($PSQL "insert into games(year,round,winner_id,opponent_id,winner_goals,opponent_goals)values($year,'$round',$TEAM_ID,$TEAM_ID_2,$winner_goals,$opponent_goals)")
+    if [[ $INSERT_GAMES_RESULT == 'INSERT 0 1' ]]
+    then
+        echo "Inserted into games $winner $opponenet"
+    fi
+  fi
+done
